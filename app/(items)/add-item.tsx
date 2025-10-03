@@ -1,19 +1,49 @@
-// Add item screen
 import { useState } from "react";
-import { Button, Image, Text, TextInput, View } from "react-native";
+import { Alert, Button, Image, TextInput, View } from "react-native";
+import { auth } from "../../api/firebase";
 import { pickImageAndUpload } from "../../services/imageService";
+import { addItem } from "../../services/itemService";
 
 export default function AddItemScreen() {
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
   const [image, setImage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const handleUpload = async () => {
     const uploadedUrl = await pickImageAndUpload();
     if (uploadedUrl) {
       setImage(uploadedUrl);
-      console.log("✅ Uploaded Image:", uploadedUrl);
-      // later -> save {title, price, image} to Firestore
+    } else {
+      Alert.alert("Upload failed", "Could not upload image");
+    }
+  };
+
+  const handleSave = async () => {
+    if (!title || !price || !image) {
+      Alert.alert("Missing fields", "Please enter all fields and upload an image.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const sellerId = auth.currentUser?.uid ?? "guest";
+
+      await addItem({
+        title,
+        price: parseFloat(price),
+        imageUrl: image,
+        sellerId,
+      });
+
+      Alert.alert("Success", "Item added successfully!");
+      setTitle("");
+      setPrice("");
+      setImage(null);
+    } catch (error) {
+      Alert.alert("Error", "Failed to save item");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -34,13 +64,9 @@ export default function AddItemScreen() {
       />
 
       <Button title="Upload Image" onPress={handleUpload} />
+      {image && <Image source={{ uri: image }} style={{ width: 200, height: 200, marginTop: 10 }} />}
 
-      {image && (
-        <>
-          <Image source={{ uri: image }} style={{ width: 200, height: 200, marginTop: 10 }} />
-          <Text>Image URL: {image}</Text>
-        </>
-      )}
+      <Button title={loading ? "Saving..." : "Save Item"} onPress={handleSave} disabled={loading} />
     </View>
   );
 }
