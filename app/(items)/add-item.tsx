@@ -1,3 +1,4 @@
+// app/(items)/add-item.tsx
 import { useState } from "react";
 import { Alert, Button, Image, TextInput, View } from "react-native";
 import { auth } from "../../api/firebase";
@@ -7,6 +8,7 @@ import { addItem } from "../../services/itemService";
 export default function AddItemScreen() {
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
+  const [description, setDescription] = useState("");
   const [image, setImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -31,6 +33,7 @@ export default function AddItemScreen() {
 
       await addItem({
         title,
+        description,
         price: parseFloat(price),
         imageUrl: image,
         sellerId,
@@ -39,6 +42,7 @@ export default function AddItemScreen() {
       Alert.alert("Success", "Item added successfully!");
       setTitle("");
       setPrice("");
+      setDescription("");
       setImage(null);
     } catch (error) {
       Alert.alert("Error", "Failed to save item");
@@ -60,6 +64,12 @@ export default function AddItemScreen() {
         value={price}
         onChangeText={setPrice}
         keyboardType="numeric"
+        style={{ borderBottomWidth: 1, marginBottom: 10 }}
+      />
+      <TextInput
+        placeholder="Description (optional)"
+        value={description}
+        onChangeText={setDescription}
         style={{ borderBottomWidth: 1, marginBottom: 10 }}
       />
 

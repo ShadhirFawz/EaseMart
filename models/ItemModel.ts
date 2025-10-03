@@ -2,8 +2,9 @@
 export interface Item {
   id: string;
   title: string;
-  description: string;
+  description?: string;
+  price: number;
   imageUrl?: string;
-  ownerId: string;
+  sellerId: string;
   createdAt: number;
 }

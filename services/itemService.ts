@@ -1,5 +1,14 @@
 // Item service
-import { addDoc, collection, getDocs, orderBy, query, serverTimestamp } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  orderBy,
+  query,
+  serverTimestamp
+} from "firebase/firestore";
 import { db } from "../api/firebase";
 import { Item } from "../models/ItemModel";
 
@@ -21,3 +30,10 @@ export const fetchItems = async (): Promise<Item[]> => {
   const snap = await getDocs(q);
   return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Item));
 };
+
+export async function getItem(id: string): Promise<Item | null> {
+  const docRef = doc(db, "items", id);
+  const snap = await getDoc(docRef);
+  if (!snap.exists()) return null;
+  return { id: snap.id, ...(snap.data() as Omit<Item, "id">) };
+}
