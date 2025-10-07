@@ -1,6 +1,7 @@
 // Items feed
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { FlatList, Image, Text, View } from "react-native";
+import { Button, FlatList, Image, Text, View } from "react-native";
 import { Item } from "../../models/ItemModel";
 import { fetchItems } from "../../services/itemService";
 
@@ -17,6 +18,9 @@ export default function ItemsFeedScreen() {
 
   return (
     <View style={{ flex: 1, padding: 20 }}>
+      <View style={{ flexDirection: "row", justifyContent: "flex-end", padding: 10 }}>
+        <Button title="Profile" onPress={() => router.push("/(auth)/profile")} />
+      </View>
       <Text style={{ fontSize: 24, marginBottom: 20 }}>Items Feed</Text>
       <FlatList
         data={items}

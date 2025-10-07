@@ -1,36 +1,49 @@
 // app/(auth)/profile.tsx
-import { useState } from "react";
+import { useRouter } from "expo-router";
+import { signOut } from "firebase/auth";
 import { Alert, Button, Image, Text, View } from "react-native";
+import { auth } from "../../api/firebase";
 import { useAuth } from "../../context/AuthContext";
-import { pickImageAndUpload } from "../../services/imageService";
 
 export default function ProfileScreen() {
   const { user } = useAuth();
-  const [photo, setPhoto] = useState(user?.photoURL);
+  const router = useRouter();
 
-  const handlePickAndUpload = async () => {
-    const url = await pickImageAndUpload();
-    if (url) {
-      setPhoto(url);
-      Alert.alert("Profile Updated", "New image uploaded!");
-      // ⚡ Optionally: update Firebase user profile here
-      // await updateProfile(auth.currentUser, { photoURL: url });
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.replace("/(auth)/login");
+    } catch (err) {
+      Alert.alert("Error", "Failed to log out");
     }
   };
 
   return (
-    <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-      {photo ? (
-        <Image
-          source={{ uri: photo }}
-          style={{ width: 100, height: 100, borderRadius: 50 }}
-        />
+    <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 20 }}>
+      {user?.photoURL ? (
+        <Image source={{ uri: user.photoURL }} style={{ width: 100, height: 100, borderRadius: 50, marginBottom: 20 }} />
       ) : (
-        <Text>No Profile Pic</Text>
+        <View
+          style={{
+            width: 100,
+            height: 100,
+            borderRadius: 50,
+            backgroundColor: "#ccc",
+            justifyContent: "center",
+            alignItems: "center",
+            marginBottom: 20,
+          }}
+        >
+          <Text style={{ fontSize: 30, color: "#fff" }}>
+            {user?.displayName?.charAt(0)?.toUpperCase() ?? "U"}
+          </Text>
+        </View>
       )}
-      <Text>{user?.displayName}</Text>
-      <Text>{user?.email}</Text>
-      <Button title="Change Profile Picture" onPress={handlePickAndUpload} />
+
+      <Text style={{ fontSize: 20, marginBottom: 10 }}>{user?.displayName ?? "No Name"}</Text>
+      <Text style={{ marginBottom: 20 }}>{user?.email}</Text>
+
+      <Button title="Logout" onPress={handleLogout} color="#d9534f" />
     </View>
   );
 }

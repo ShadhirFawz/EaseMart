@@ -13,7 +13,7 @@ export default function RegisterScreen() {
   const handleRegister = async () => {
     try {
       await register(email, password, name);
-      router.replace("/(items)"); // redirect to feed
+      router.replace("/(auth)/login"); // redirect to feed
     } catch (err: any) {
       Alert.alert("Registration failed", err.message);
     }
