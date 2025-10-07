@@ -1,45 +1,42 @@
 // services/imageService.ts
 import * as ImagePicker from "expo-image-picker";
-
-const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/di4zbukg3/image/upload";
-const UPLOAD_PRESET = "easemart_preset"; // your preset name
+import { Alert } from "react-native";
+import { supabase } from "../api/supabase";
 
 export async function pickImageAndUpload() {
-  // Step 1: Pick image
-  let result = await ImagePicker.launchImageLibraryAsync({
+  // Pick image
+  const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ImagePicker.MediaTypeOptions.Images,
     allowsEditing: true,
-    quality: 0.7,
+    quality: 0.8,
   });
 
-  if (result.canceled) {
-    return null;
-  }
+  if (result.canceled) return null;
 
-  const asset = result.assets[0];
-  const fileType = asset.type ?? "image/jpeg"; // jpg/png
-  const fileName = asset.fileName ?? `upload.${fileType.split("/")[1]}`;
+  const file = result.assets[0];
+  const fileExt = file.uri.split(".").pop() || "jpg";
+  const fileName = `item_${Date.now()}.${fileExt}`;
 
-  // Step 2: Prepare FormData
-  let formData = new FormData();
-  formData.append("file", {
-    uri: asset.uri,
-    type: fileType,
-    name: fileName,
-  } as any);
-  formData.append("upload_preset", UPLOAD_PRESET);
-
-  // Step 3: Upload to Cloudinary
   try {
-    const response = await fetch(CLOUDINARY_URL, {
-      method: "POST",
-      body: formData,
-    });
+    const imageData = await fetch(file.uri);
+    const blob = await imageData.blob();
 
-    const data = await response.json();
-    return data.secure_url; // ✅ Public URL of uploaded image
-  } catch (error) {
-    console.error("Cloudinary upload error:", error);
+    // Upload to Supabase Storage
+    const { error } = await supabase.storage
+      .from("EaseMart")
+      .upload(`items/${fileName}`, blob, { contentType: blob.type });
+
+    if (error) {
+      console.error("Upload failed", error);
+      Alert.alert("Upload Error", error.message);
+      return null;
+    }
+
+    // Get public URL
+    const { data } = supabase.storage.from("EaseMart").getPublicUrl(`items/${fileName}`);
+    return data.publicUrl;
+  } catch (err) {
+    console.error("Unexpected upload error", err);
     return null;
   }
 }
