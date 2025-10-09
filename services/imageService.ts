@@ -1,42 +1,39 @@
 // services/imageService.ts
+import * as FileSystem from "expo-file-system/legacy";
 import * as ImagePicker from "expo-image-picker";
-import { Alert } from "react-native";
+import { auth } from "../api/firebase";
 import { supabase } from "../api/supabase";
 
 export async function pickImageAndUpload() {
-  // Pick image
+  // request permission
+  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (status !== "granted") throw new Error("Permission to access media library is required.");
+
   const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.Images,
     allowsEditing: true,
     quality: 0.8,
   });
 
-  if (result.canceled) return null;
+  if ((result as any).canceled || (result as any).cancelled) return null;
+  const asset = (result as any).assets ? (result as any).assets[0] : result;
+  const uri: string = asset.uri;
+  if (!uri) return null;
 
-  const file = result.assets[0];
-  const fileExt = file.uri.split(".").pop() || "jpg";
-  const fileName = `item_${Date.now()}.${fileExt}`;
+  // read as base64
+  const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+  const buffer = (global as any).Buffer.from(base64, "base64");
 
-  try {
-    const imageData = await fetch(file.uri);
-    const blob = await imageData.blob();
+  const ext = uri.split(".").pop()?.split("?")[0] ?? "jpg";
+  const fileName = `item_${Date.now()}_${auth.currentUser?.uid || "anon"}.${ext}`;
+  const contentType = ext === "png" ? "image/png" : "image/jpeg";
 
-    // Upload to Supabase Storage
-    const { error } = await supabase.storage
-      .from("EaseMart")
-      .upload(`items/${fileName}`, blob, { contentType: blob.type });
+  const { error } = await supabase.storage.from("EaseMart").upload(`items/${fileName}`, buffer, {
+    upsert: true,
+    contentType,
+  });
 
-    if (error) {
-      console.error("Upload failed", error);
-      Alert.alert("Upload Error", error.message);
-      return null;
-    }
+  if (error) throw error;
 
-    // Get public URL
-    const { data } = supabase.storage.from("EaseMart").getPublicUrl(`items/${fileName}`);
-    return data.publicUrl;
-  } catch (err) {
-    console.error("Unexpected upload error", err);
-    return null;
-  }
+  const { data } = supabase.storage.from("EaseMart").getPublicUrl(`items/${fileName}`);
+  return data.publicUrl;
 }

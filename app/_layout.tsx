@@ -1,17 +1,31 @@
 // app/_layout.tsx
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
+import { Buffer } from "buffer";
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import "react-native-reanimated";
 import { AuthProvider, useAuth } from "../context/AuthContext";
+
+if (!(global as any).Buffer) {
+  (global as any).Buffer = Buffer;
+}
 
 function RootNavigator() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  // Wait for Firebase auth to load before deciding where to go
+  useEffect(() => {
+    if (loading) return;
+    if (!user) {
+      router.replace("/(auth)/login");
+    } else {
+      router.replace("/(items)");
+    }
+  }, [user, loading]);
+
   if (loading) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
@@ -20,14 +34,7 @@ function RootNavigator() {
     );
   }
 
-  // Redirect based on auth state
-  if (!user) {
-    router.replace("/(auth)/login");
-  } else {
-    router.replace("/(items)");
-  }
-
-  return null; // nothing to render — redirects immediately
+  return null;
 }
 
 export default function RootLayout() {

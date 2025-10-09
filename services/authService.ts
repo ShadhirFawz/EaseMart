@@ -1,11 +1,12 @@
 // Auth service
+import * as SecureStore from "expo-secure-store";
 import {
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
-    signOut,
-    updateProfile,
+  createUserWithEmailAndPassword,
+  getAuth,
+  signInWithEmailAndPassword,
+  updateProfile
 } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from "../api/firebase";
 import { User } from "../models/UserModel";
 
@@ -26,10 +27,23 @@ export const register = async (email: string, password: string, displayName: str
   return newUser;
 };
 
-export const login = async (email: string, password: string) => {
-  const userCred = await signInWithEmailAndPassword(auth, email, password);
-  const userDoc = await getDoc(doc(db, "users", userCred.user.uid));
-  return userDoc.data();
-};
 
-export const logout = async () => await signOut(auth);
+export async function login(email: string, password: string) {
+  const cred = await signInWithEmailAndPassword(auth, email, password);
+  // Store for persistence
+  await SecureStore.setItemAsync("easemart_credentials", JSON.stringify({ email, password }));
+  return cred;
+}
+
+export async function logout() {
+  await SecureStore.deleteItemAsync("easemart_credentials");
+  await auth.signOut();
+}
+
+export async function updateUserPhoto(photoUrl: string) {
+  const user = getAuth().currentUser;
+  if (!user) throw new Error("No authenticated user found");
+
+  await updateProfile(user, { photoURL: photoUrl });
+  console.log("Profile photo updated:", photoUrl);
+}

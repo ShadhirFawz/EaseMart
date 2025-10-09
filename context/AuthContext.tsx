@@ -1,6 +1,7 @@
 // context/AuthContext.tsx
-import { onAuthStateChanged, User } from "firebase/auth";
-import { createContext, useContext, useEffect, useState } from "react";
+import * as SecureStore from "expo-secure-store";
+import { onAuthStateChanged, signInWithEmailAndPassword, User } from "firebase/auth";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { auth } from "../api/firebase";
 
 interface AuthContextType {
@@ -18,11 +19,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       setLoading(false);
     });
     return () => unsub();
+  }, []);
+
+  // Attempt auto-login if auth.currentUser is null
+  useEffect(() => {
+    const tryAutoLogin = async () => {
+      if (auth.currentUser) return;
+      const creds = await SecureStore.getItemAsync("easemart_credentials");
+      if (!creds) return;
+      try {
+        const { email, password } = JSON.parse(creds);
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (err) {
+        console.warn("Auto-login failed:", err);
+      }
+    };
+    tryAutoLogin();
   }, []);
 
   return (
@@ -32,6 +49,4 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function useAuth() {
-  return useContext(AuthContext);
-}
+export const useAuth = () => useContext(AuthContext);

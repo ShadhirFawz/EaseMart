@@ -1,8 +1,8 @@
-// Firebase init (auth, firestore, storage)
-// src/lib/firebase.ts
+// api/firebase.ts
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { initializeAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCuX7qboDJLAnLJgoHutbYtMx-p3urFNOY",
@@ -14,7 +14,16 @@ const firebaseConfig = {
   measurementId: "G-4GY1NHYN28"
 };
 
-const app = initializeApp(firebaseConfig);
+// ✅ initialize app
+export const app = initializeApp(firebaseConfig);
 
-export const auth = getAuth(app);
+// ✅ initialize auth (with default persistence — we already handled persistence in context)
+export const auth = initializeAuth(app);
+
+// ✅ initialize Firestore
 export const db = getFirestore(app);
+
+// ✅ initialize Storage if needed
+export const storage = getStorage(app);
+
+export default app;
